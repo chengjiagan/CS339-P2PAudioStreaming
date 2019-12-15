@@ -1,8 +1,5 @@
 package com.waterlemongan.audiostreaming;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +8,6 @@ import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,6 +22,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +43,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.CHANGE_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.CHANGE_NETWORK_STATE,
+                    Manifest.permission.ACCESS_WIFI_STATE
+            }, PERMISSIONS_REQUEST_CODE);
+        }
+
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
 
@@ -59,14 +68,6 @@ public class MainActivity extends AppCompatActivity {
                 connect(device);
             }
         });
-
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || checkSelfPermission(Manifest.permission.CHANGE_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[] {
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.CHANGE_NETWORK_STATE
-            }, PERMISSIONS_REQUEST_CODE);
-        }
     }
 
     @Override
@@ -79,6 +80,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         manager.stopPeerDiscovery(channel, null);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        manager.removeGroup(channel, null);
+        manager.cancelConnect(channel, null);
     }
 
     @Override
@@ -103,8 +111,7 @@ public class MainActivity extends AppCompatActivity {
         manager.createGroup(channel, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Intent intent = new Intent(MainActivity.this, AudioActivity.class);
-                startActivity(intent);
+                nextActivity();
             }
 
             @Override
@@ -122,8 +129,7 @@ public class MainActivity extends AppCompatActivity {
         manager.connect(channel, config, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-                Intent intent = new Intent(MainActivity.this, AudioActivity.class);
-                startActivity(intent);
+                nextActivity();
             }
 
             @Override
@@ -131,6 +137,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Connect Failed: " + reason, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void nextActivity() {
+        Intent intent = new Intent(MainActivity.this, AudioActivity.class);
+        startActivity(intent);
     }
 
     private void startDiscovery() {
