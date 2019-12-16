@@ -74,10 +74,18 @@ class Client {
         NetworkUtil.sendMessage(serverAddr, "play");
     }
 
+    public void sendStop() {
+        NetworkUtil.sendMessage(serverAddr, "stop");
+    }
+
     public void stop() {
         network.stop();
         timer.cancel();
         clientTimer.cancel();
+    }
+
+    public InetAddress getServerAddr() {
+        return serverAddr;
     }
 
     public String getServerName() {
@@ -117,7 +125,6 @@ class Client {
             }
         }, 1000, 30000);
     }
-
 
     public interface EventListener {
         void onServerDisconnect();

@@ -1,10 +1,6 @@
 package com.waterlemongan.audiostreaming;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
-import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -15,9 +11,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -83,7 +83,7 @@ public class AudioActivity extends AppCompatActivity {
 
             @Override
             public void onPlayOk() {
-                startPlay();
+                startPlay(client.getServerAddr());
             }
         });
 
@@ -91,6 +91,22 @@ public class AudioActivity extends AppCompatActivity {
         TextView deviceNameText = findViewById(R.id.deviceName);
         deviceAddrText.setText(client.getServerAddress());
         deviceNameText.setText(client.getServerName());
+
+        Button button = findViewById(R.id.button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Button button = (Button) v;
+                String text = button.getText().toString();
+                if (text.equals("play")) {
+                    button.setText("stop");
+                    client.sendPlay();
+                } else if (text.equals("stop")) {
+                    button.setText("play");
+                    stopMusic();
+                }
+            }
+        });
     }
 
     private void startClientNoServer() {
@@ -121,7 +137,7 @@ public class AudioActivity extends AppCompatActivity {
 
             @Override
             public void onStop(InetAddress address) {
-                stopMusic(address);
+                stopMusic();
             }
         });
 
@@ -138,11 +154,12 @@ public class AudioActivity extends AppCompatActivity {
         }
     }
 
-    private void startPlay() {
+private void startPlay(InetAddress address) {
         //TODO
     }
 
-    private void stopMusic(InetAddress address) {
+    private void stopMusic() {
+        client.sendStop();
         //TODO
     }
 
