@@ -3,9 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/app_mode_switch"
-        android:checked="false"
-        android:title="Server"
-        app:actionLayout="@layout/switch_item"
+        android:id="@+id/atn_switch"
+        android:title="Client"
         app:showAsAction="always" />
 </menu>

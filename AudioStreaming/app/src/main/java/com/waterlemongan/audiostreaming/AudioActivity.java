@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,6 +29,7 @@ public class AudioActivity extends AppCompatActivity {
     private ListView listView;
     private Client client = null;
     private Server server = null;
+    private boolean isServer = false;
 
     public static final String TAG = "AudioActivity";
 
@@ -37,7 +39,16 @@ public class AudioActivity extends AppCompatActivity {
 
         handler = new ActivityHandler(this);
 
+        client = new Client();
         startClientNoServer();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        stopClient();
+        stopServer();
     }
 
     @Override
@@ -50,11 +61,14 @@ public class AudioActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.app_mode_switch:
-                if (item.isChecked()) {
+            case R.id.atn_switch:
+                isServer = !isServer;
+                if (isServer) {
+                    Log.d(TAG, "server");
                     stopClient();
                     startServer();
                 } else {
+                    Log.d(TAG, "client");
                     stopServer();
                     startClientNoServer();
                 }
@@ -66,6 +80,7 @@ public class AudioActivity extends AppCompatActivity {
     private void stopClient() {
         if (client != null) {
             client.stop();
+            Log.d(TAG, "client stop");
             client = null;
         }
     }
@@ -73,7 +88,7 @@ public class AudioActivity extends AppCompatActivity {
     private void startClient(InetAddress address) {
         setContentView(R.layout.activity_audio_client);
 
-        client = new Client(address, new Client.EventListener() {
+        client.start(address, new Client.EventListener() {
             @Override
             public void onServerDisconnect() {
                 stopClient();
@@ -113,7 +128,10 @@ public class AudioActivity extends AppCompatActivity {
         serverAddr = null;
         setContentView(R.layout.activity_audio);
 
-        Client.searchServer(new Client.SearchListener() {
+        if (client == null) {
+            client = new Client();
+        }
+        client.searchServer(new Client.SearchListener() {
             @Override
             public void onServerNotFound() {
                 sendMessage("toast\nServer not found");
@@ -128,6 +146,8 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void startServer() {
+        setContentView(R.layout.activity_audio_server);
+
         server = new Server(new Server.EventListener() {
             @Override
             public void onPlay(InetAddress address) {
@@ -150,11 +170,12 @@ public class AudioActivity extends AppCompatActivity {
     private void stopServer() {
         if (server != null) {
             server.stop();
+            Log.d(TAG, "server stop");
             server = null;
         }
     }
 
-private void startPlay(InetAddress address) {
+    private void startPlay(InetAddress address) {
         //TODO
     }
 

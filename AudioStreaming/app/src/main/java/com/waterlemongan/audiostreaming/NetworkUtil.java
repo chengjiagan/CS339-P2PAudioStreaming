@@ -1,5 +1,6 @@
 package com.waterlemongan.audiostreaming;
 
+import android.provider.ContactsContract;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -21,8 +22,8 @@ class NetworkUtil {
     private BroadcastReceiveThread broadcastReceiver = null;
     private MessageReceiveThread messageReceiver = null;
 
-    public static final int broadcastPort = 30001;
-    public static final int controlPort = 30002;
+    public static final int broadcastPort = 40011;
+    public static final int controlPort = 40012;
 
     public static void sendBroadcastMessage(String msg) {
         new BroadcastThread(msg).start();
@@ -42,7 +43,8 @@ class NetworkUtil {
 
     public void stopReceiveBroadcast() {
         if (broadcastReceiver != null) {
-            broadcastReceiver.setRunning(false);
+            broadcastReceiver.interrupt();
+            broadcastReceiver.close();
             broadcastReceiver = null;
         }
     }
@@ -57,7 +59,8 @@ class NetworkUtil {
 
     public void stopReceiveMessage() {
         if (messageReceiver != null) {
-            messageReceiver.setRunning(false);
+            messageReceiver.interrupt();
+            messageReceiver.close();
             messageReceiver = null;
         }
     }
@@ -136,6 +139,7 @@ class NetworkUtil {
     private static class BroadcastReceiveThread extends Thread {
         private MessageListener listener;
         private boolean running;
+        private DatagramSocket s = null;
 
         BroadcastReceiveThread(MessageListener listener) {
             this.running = true;
@@ -146,9 +150,17 @@ class NetworkUtil {
             this.running = running;
         }
 
+        public void close() {
+            if (s != null) {
+                log("close broadcast socket");
+                s.close();
+                running = false;
+                s = null;
+            }
+        }
+
         @Override
         public void run() {
-            DatagramSocket s;
             try {
                 s = new DatagramSocket(broadcastPort);
             } catch (SocketException e) {
@@ -173,13 +185,14 @@ class NetworkUtil {
                 }
             }
 
-            s.close();
+            log("stop");
         }
     }
 
     private static class MessageReceiveThread extends Thread {
         private MessageListener listener;
         private boolean running;
+        private ServerSocket ss;
 
         MessageReceiveThread(MessageListener listener) {
             this.running = true;
@@ -190,9 +203,22 @@ class NetworkUtil {
             this.running = running;
         }
 
+        public void close() {
+            if (ss != null) {
+                try {
+                    log("close server socket");
+                    ss.close();
+                } catch (IOException e) {
+                    log("close server socket failed");
+                    e.printStackTrace();
+                }
+                running = false;
+                ss = null;
+            }
+        }
+
         @Override
         public void run() {
-            ServerSocket ss;
             try {
                 ss = new ServerSocket(controlPort);
             } catch (IOException e) {
@@ -225,12 +251,7 @@ class NetworkUtil {
                 }
             }
 
-            try {
-                ss.close();
-            } catch (IOException e) {
-                log("close server socket failed");
-                e.printStackTrace();
-            }
+            log("stop");
         }
     }
 

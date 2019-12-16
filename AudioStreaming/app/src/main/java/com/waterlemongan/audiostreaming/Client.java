@@ -12,13 +12,17 @@ class Client {
     private NetworkUtil network;
     private Timer timer;
     private Timer clientTimer;
+    private EventListener listener;
 
-    public Client(InetAddress address, final EventListener listener) {
-        serverAddr = address;
-
+    public Client() {
         network = new NetworkUtil();
         timer = new Timer();
         clientTimer = new Timer();
+    }
+
+    public void start(InetAddress address, EventListener aListener) {
+        serverAddr = address;
+        listener = aListener;
 
         timer.schedule(new TimerTask() {
             @Override
@@ -100,10 +104,7 @@ class Client {
         Log.d("Client", logMsg);
     }
 
-    public static void searchServer(final SearchListener listener) {
-        final NetworkUtil network = new NetworkUtil();
-        final Timer timer = new Timer();
-
+    public void searchServer(final SearchListener listener) {
         NetworkUtil.sendBroadcastMessage("client");
         network.receiveMessage(new NetworkUtil.MessageListener() {
             @Override
@@ -120,6 +121,7 @@ class Client {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+                log("server not found");
                 listener.onServerNotFound();
                 NetworkUtil.sendBroadcastMessage("client");
             }

@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "remove group");
         manager.removeGroup(channel, null);
         manager.cancelConnect(channel, null);
     }
