@@ -25,7 +25,14 @@ class Server {
             public void onReceiveMessage(InetAddress address, String msg) {
                 if (msg.equals("client")) {
                     log("new client: " + address.getHostAddress());
-                    clientList.add(new Client(address));
+                    Client clientObj = new Client(address);
+                    clientObj.checkAlive(new Client.AliveListener() {
+                        @Override
+                        public void timeout(InetAddress address) {
+                            clientList.remove(address);
+                        }
+                    });
+                    clientList.add(clientObj);
                     NetworkUtil.sendMessage(address, "server");
                 } else {
                     log("unknown message:" + msg);
@@ -50,6 +57,14 @@ class Server {
                         listener.onStop(address);
                         break;
                     case "server?":
+                        index = clientList.indexOf(address);
+                        clientList.get(index).cancleTimer();
+                        clientList.get(index).checkAlive(new Client.AliveListener() {
+                            @Override
+                            public void timeout(InetAddress address) {
+                                clientList.remove(address);
+                            }
+                        });
                         NetworkUtil.sendMessage(address, "serverYes");
                         break;
                     default:

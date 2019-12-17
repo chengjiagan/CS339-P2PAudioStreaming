@@ -129,6 +129,10 @@ class Client {
         }, 30500);
     }
 
+    public void cancleTimer() {
+        timer.cancel();
+    }
+
     public InetAddress getServerAddr() {
         return serverAddr;
     }
