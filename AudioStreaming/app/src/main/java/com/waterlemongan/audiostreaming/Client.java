@@ -2,17 +2,21 @@ package com.waterlemongan.audiostreaming;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.io.IOException;
 import java.net.InetAddress;
+import java.sql.ClientInfoStatus;
 import java.util.Timer;
 import java.util.TimerTask;
 
 class Client {
+    private InetAddress selfAddr;
     private InetAddress serverAddr;
     private NetworkUtil network;
     private Timer timer;
     private Timer clientTimer;
-    private EventListener listener;
+    private boolean isPlaying;
 
     public Client() {
         network = new NetworkUtil();
@@ -20,9 +24,14 @@ class Client {
         clientTimer = new Timer();
     }
 
-    public void start(InetAddress address, EventListener aListener) {
+    public Client(InetAddress address) {
+        selfAddr = address;
+    }
+
+    public void start(InetAddress address, final EventListener listener) {
         serverAddr = address;
-        listener = aListener;
+        timer = new Timer();
+        clientTimer = new Timer();
 
         timer.schedule(new TimerTask() {
             @Override
@@ -30,6 +39,7 @@ class Client {
                 try {
                     if (serverAddr.isReachable(1000)) {
                         NetworkUtil.sendMessage(serverAddr, "server?");
+                        clientTimer = new Timer();
                         clientTimer.schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -88,6 +98,37 @@ class Client {
         clientTimer.cancel();
     }
 
+    public void setPlaying(boolean playing) {
+        isPlaying = playing;
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public InetAddress getSelfAddr() {
+        return selfAddr;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj != null && obj.getClass() == InetAddress.class) {
+            return selfAddr.equals(obj);
+        } else {
+            return super.equals(obj);
+        }
+    }
+
+    public void checkAlive(final AliveListener listener) {
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                listener.timeout(selfAddr);
+            }
+        }, 30500);
+    }
+
     public InetAddress getServerAddr() {
         return serverAddr;
     }
@@ -105,6 +146,7 @@ class Client {
     }
 
     public void searchServer(final SearchListener listener) {
+        timer = new Timer();
         NetworkUtil.sendBroadcastMessage("client");
         network.receiveMessage(new NetworkUtil.MessageListener() {
             @Override
@@ -125,7 +167,7 @@ class Client {
                 listener.onServerNotFound();
                 NetworkUtil.sendBroadcastMessage("client");
             }
-        }, 1000, 30000);
+        }, 5000, 5000);
     }
 
     public interface EventListener {
@@ -138,5 +180,9 @@ class Client {
         void onServerNotFound();
 
         void onServerFound(InetAddress address);
+    }
+
+    public interface AliveListener {
+        void timeout(InetAddress address);
     }
 }

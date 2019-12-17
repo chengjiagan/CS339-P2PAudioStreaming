@@ -9,17 +9,26 @@ import java.util.List;
 
 class Server {
     private NetworkUtil network;
-    private List<InetAddress> clientList;
+    private List<Client> clientList;
+    private EventListener listener;
 
-    public Server(final EventListener listener) {
+    public Server() {
         network = new NetworkUtil();
         clientList = new ArrayList<>();
+    }
+
+    public void start(EventListener aListener) {
+        listener = aListener;
 
         network.receiveBroadcastMessage(new NetworkUtil.MessageListener() {
             @Override
             public void onReceiveMessage(InetAddress address, String msg) {
                 if (msg.equals("client")) {
+                    log("new client: " + address.getHostAddress());
+                    clientList.add(new Client(address));
                     NetworkUtil.sendMessage(address, "server");
+                } else {
+                    log("unknown message:" + msg);
                 }
             }
         });
@@ -27,14 +36,17 @@ class Server {
         network.receiveMessage(new NetworkUtil.MessageListener() {
             @Override
             public void onReceiveMessage(InetAddress address, String msg) {
+                int index;
                 switch (msg) {
                     case "play":
-                        clientList.add(address);
                         listener.onPlay(address);
+                        index = clientList.indexOf(address);
+                        clientList.get(index).setPlaying(true);
                         NetworkUtil.sendMessage(address, "playOk");
                         break;
                     case "stop":
-                        clientList.remove(address);
+                        index = clientList.indexOf(address);
+                        clientList.get(index).setPlaying(true);
                         listener.onStop(address);
                         break;
                     case "server?":
@@ -51,7 +63,8 @@ class Server {
     public void stop() {
         network.stop();
 
-        for (InetAddress clientAddr: clientList) {
+        for (Client clientObj: clientList) {
+            InetAddress clientAddr = clientObj.getSelfAddr();
             try {
                 if (clientAddr.isReachable(500)) {
                     NetworkUtil.sendMessage(clientAddr, "notServe");
@@ -63,7 +76,7 @@ class Server {
         }
     }
 
-    public List<InetAddress> getClientList() {
+    public List<Client> getClientList() {
         return clientList;
     }
 

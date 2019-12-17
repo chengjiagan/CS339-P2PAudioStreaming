@@ -30,6 +30,7 @@ public class AudioActivity extends AppCompatActivity {
     private Client client = null;
     private Server server = null;
     private boolean isServer = false;
+    private boolean isPlay = false;
 
     public static final String TAG = "AudioActivity";
 
@@ -40,12 +41,13 @@ public class AudioActivity extends AppCompatActivity {
         handler = new ActivityHandler(this);
 
         client = new Client();
+        server = new Server();
         startClientNoServer();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onDestroy() {
+        super.onDestroy();
 
         stopClient();
         stopServer();
@@ -65,10 +67,12 @@ public class AudioActivity extends AppCompatActivity {
                 isServer = !isServer;
                 if (isServer) {
                     Log.d(TAG, "server");
+                    item.setTitle("Server");
                     stopClient();
                     startServer();
                 } else {
                     Log.d(TAG, "client");
+                    item.setTitle("Client");
                     stopServer();
                     startClientNoServer();
                 }
@@ -78,11 +82,7 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void stopClient() {
-        if (client != null) {
-            client.stop();
-            Log.d(TAG, "client stop");
-            client = null;
-        }
+        client.stop();
     }
 
     private void startClient(InetAddress address) {
@@ -98,39 +98,45 @@ public class AudioActivity extends AppCompatActivity {
 
             @Override
             public void onPlayOk() {
-                startPlay(client.getServerAddr());
+                clientPlayMusic(client.getServerAddr());
             }
         });
 
         TextView deviceAddrText = findViewById(R.id.deviceAddr);
         TextView deviceNameText = findViewById(R.id.deviceName);
         deviceAddrText.setText(client.getServerAddress());
-        deviceNameText.setText(client.getServerName());
+//        deviceNameText.setText(client.getServerName());
 
         Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Button button = (Button) v;
-                String text = button.getText().toString();
-                if (text.equals("play")) {
+                isPlay = !isPlay;
+                if (isPlay) {
                     button.setText("stop");
                     client.sendPlay();
-                } else if (text.equals("stop")) {
+                } else {
                     button.setText("play");
-                    stopMusic();
+                    clientStopMusic();
                 }
             }
         });
+    }
+
+    private void clientPlayMusic(InetAddress address) {
+        //TODO
+    }
+
+    private void clientStopMusic() {
+        client.sendStop();
+        //TODO
     }
 
     private void startClientNoServer() {
         serverAddr = null;
         setContentView(R.layout.activity_audio);
 
-        if (client == null) {
-            client = new Client();
-        }
         client.searchServer(new Client.SearchListener() {
             @Override
             public void onServerNotFound() {
@@ -140,6 +146,7 @@ public class AudioActivity extends AppCompatActivity {
             @Override
             public void onServerFound(InetAddress address) {
                 serverAddr = address;
+                Log.d(TAG, "connect server: " + address.getHostAddress());
                 sendMessage("startClient");
             }
         });
@@ -148,16 +155,19 @@ public class AudioActivity extends AppCompatActivity {
     private void startServer() {
         setContentView(R.layout.activity_audio_server);
 
-        server = new Server(new Server.EventListener() {
+        server.start(new Server.EventListener() {
             @Override
             public void onPlay(InetAddress address) {
+                Log.d(TAG, address.getHostAddress() + " say play");
                 sendMessage("deviceListChange");
-                receiveMusic(address);
+                serverPlayMusic(address);
             }
 
             @Override
             public void onStop(InetAddress address) {
-                stopMusic();
+                Log.d(TAG, address.getHostAddress() + " say stop");
+                sendMessage("deviceListChange");
+                serverStopMusic(address);
             }
         });
 
@@ -168,23 +178,16 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void stopServer() {
-        if (server != null) {
-            server.stop();
-            Log.d(TAG, "server stop");
-            server = null;
-        }
+        server.stop();
     }
 
-    private void startPlay(InetAddress address) {
+    private void serverStopMusic(InetAddress address) {
+        Log.d(TAG, "stop music");
         //TODO
     }
 
-    private void stopMusic() {
-        client.sendStop();
-        //TODO
-    }
-
-    private void receiveMusic(InetAddress address) {
+    private void serverPlayMusic(InetAddress address) {
+        Log.d(TAG, "receive music");
         //TODO
     }
 
@@ -220,12 +223,12 @@ public class AudioActivity extends AppCompatActivity {
         }
     }
 
-    private class AudioDeviceListAdapter extends ArrayAdapter<InetAddress> {
+    private class AudioDeviceListAdapter extends ArrayAdapter<Client> {
 
-        private List<InetAddress> items;
+        private List<Client> items;
 
         public AudioDeviceListAdapter(Context context, int textViewResourceId,
-                                      List<InetAddress> objects) {
+                                      List<Client> objects) {
             super(context, textViewResourceId, objects);
             items = objects;
         }
@@ -238,13 +241,13 @@ public class AudioActivity extends AppCompatActivity {
                 LayoutInflater vi = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = vi.inflate(R.layout.row_device, null);
             }
-            InetAddress device = items.get(position);
+            InetAddress device = items.get(position).getSelfAddr();
             if (device != null) {
                 TextView top = (TextView) v.findViewById(R.id.deviceName);
                 TextView bottom = (TextView) v.findViewById(R.id.deviceAddress);
 
                 if (top != null) {
-                    top.setText(device.getHostName());
+                    top.setText("Device " + position);
                 }
                 if (bottom != null) {
                     bottom.setText(device.getHostAddress());

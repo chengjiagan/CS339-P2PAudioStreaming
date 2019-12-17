@@ -16,7 +16,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 class NetworkUtil {
     private BroadcastReceiveThread broadcastReceiver = null;
@@ -39,6 +41,7 @@ class NetworkUtil {
         }
         broadcastReceiver = new BroadcastReceiveThread(listener);
         broadcastReceiver.start();
+        log("start udp broadcast listening");
     }
 
     public void stopReceiveBroadcast() {
@@ -55,6 +58,7 @@ class NetworkUtil {
         }
         messageReceiver = new MessageReceiveThread(listener);
         messageReceiver.start();
+        log("start tcp listening");
     }
 
     public void stopReceiveMessage() {
@@ -98,6 +102,7 @@ class NetworkUtil {
             DatagramSocket s;
             try {
                 s = new DatagramSocket();
+                s.setBroadcast(true);
             } catch (SocketException ex) {
                 log("create udp socket failed");
                 ex.printStackTrace();
@@ -112,24 +117,25 @@ class NetworkUtil {
                 while (ee.hasMoreElements())
                 {
                     InetAddress i = (InetAddress) ee.nextElement();
+                    if (!i.isLoopbackAddress()) {
+                        byte[] b = i.getAddress();
+                        b[3] = (byte) 0xFF;
+                        try {
+                            i = InetAddress.getByAddress(b);
+                            log(i.getHostAddress());
+                        } catch (UnknownHostException ex) {
+                            log("unknown host address");
+                            ex.printStackTrace();
+                            return;
+                        }
 
-                    byte[] b = i.getAddress();
-                    b[3] = (byte) 0xFF;
-                    try {
-                        i = InetAddress.getByAddress(b);
-                    } catch (UnknownHostException ex) {
-                        log("unknown host address");
-                        ex.printStackTrace();
-                        return;
-                    }
-
-                    DatagramPacket p = new DatagramPacket(buf, buf.length, i, broadcastPort);
-                    try {
-                        s.send(p);
-                    } catch (IOException ex) {
-                        log("send upd packet failed");
-                        ex.printStackTrace();
-                        return;
+                        DatagramPacket p = new DatagramPacket(buf, buf.length, i, broadcastPort);
+                        try {
+                            s.send(p);
+                        } catch (IOException ex) {
+                            log("send upd packet failed");
+//                        ex.printStackTrace();
+                        }
                     }
                 }
             }
@@ -169,7 +175,7 @@ class NetworkUtil {
                 return;
             }
 
-            byte[] buf = new byte[100];
+            byte[] buf = new byte[6];
             DatagramPacket p = new DatagramPacket(buf, buf.length);
             while (running) {
                 try {
@@ -184,8 +190,6 @@ class NetworkUtil {
                     e.printStackTrace();
                 }
             }
-
-            log("stop");
         }
     }
 
@@ -250,8 +254,6 @@ class NetworkUtil {
                     }
                 }
             }
-
-            log("stop");
         }
     }
 
