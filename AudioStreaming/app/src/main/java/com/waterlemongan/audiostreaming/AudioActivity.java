@@ -157,6 +157,18 @@ public class AudioActivity extends AppCompatActivity {
 
         server.start(new Server.EventListener() {
             @Override
+            public void onNewDevice(InetAddress address) {
+                Log.d(TAG, "device connect: " + address);
+                sendMessage("deviceListChange");
+            }
+
+            @Override
+            public void onDeviceDisconnect(InetAddress address) {
+                Log.d(TAG, "device disconnect: " + address);
+                sendMessage("deviceListChange");
+            }
+
+            @Override
             public void onPlay(InetAddress address) {
                 Log.d(TAG, address.getHostAddress() + " say play");
                 sendMessage("deviceListChange");

@@ -1,6 +1,5 @@
 package com.waterlemongan.audiostreaming;
 
-import android.provider.ContactsContract;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -16,9 +15,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 
 class NetworkUtil {
     private BroadcastReceiveThread broadcastReceiver = null;

@@ -11,6 +11,17 @@ class Server {
     private NetworkUtil network;
     private List<Client> clientList;
     private EventListener listener;
+    private Client.AliveListener aliveListener = new Client.AliveListener() {
+        @Override
+        public void timeout(InetAddress address) {
+            for (Client c: clientList) {
+                if (c.equals(address)) {
+                    clientList.remove(c);
+                }
+            }
+            listener.onDeviceDisconnect(address);
+        }
+    };
 
     public Server() {
         network = new NetworkUtil();
@@ -26,13 +37,9 @@ class Server {
                 if (msg.equals("client")) {
                     log("new client: " + address.getHostAddress());
                     Client clientObj = new Client(address);
-                    clientObj.checkAlive(new Client.AliveListener() {
-                        @Override
-                        public void timeout(InetAddress address) {
-                            clientList.remove(address);
-                        }
-                    });
+                    clientObj.checkAlive(aliveListener);
                     clientList.add(clientObj);
+                    listener.onNewDevice(address);
                     NetworkUtil.sendMessage(address, "server");
                 } else {
                     log("unknown message:" + msg);
@@ -47,24 +54,25 @@ class Server {
                 switch (msg) {
                     case "play":
                         listener.onPlay(address);
-                        index = clientList.indexOf(address);
-                        clientList.get(index).setPlaying(true);
+                        index = indexOf(address);
+                        if (index != -1) {
+                            clientList.get(index).setPlaying(true);
+                        }
                         NetworkUtil.sendMessage(address, "playOk");
                         break;
                     case "stop":
-                        index = clientList.indexOf(address);
-                        clientList.get(index).setPlaying(true);
+                        index = indexOf(address);
+                        if (index != -1) {
+                            clientList.get(index).setPlaying(true);
+                        }
                         listener.onStop(address);
                         break;
                     case "server?":
-                        index = clientList.indexOf(address);
-                        clientList.get(index).cancleTimer();
-                        clientList.get(index).checkAlive(new Client.AliveListener() {
-                            @Override
-                            public void timeout(InetAddress address) {
-                                clientList.remove(address);
-                            }
-                        });
+                        index = indexOf(address);
+                        if (index != -1) {
+                            clientList.get(index).cancleTimer();
+                            clientList.get(index).checkAlive(aliveListener);
+                        }
                         NetworkUtil.sendMessage(address, "serverYes");
                         break;
                     default:
@@ -95,11 +103,22 @@ class Server {
         return clientList;
     }
 
+    private int indexOf(InetAddress address) {
+        for (int i = 0; i < clientList.size(); i++) {
+            if (clientList.get(i).equals(address)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private static void log(String logMsg) {
         Log.d("Server", logMsg);
     }
 
     public interface EventListener {
+        void onNewDevice(InetAddress address);
+        void onDeviceDisconnect(InetAddress address);
         void onPlay(InetAddress address);
         void onStop(InetAddress address);
     }
