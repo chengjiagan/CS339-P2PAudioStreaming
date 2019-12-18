@@ -136,6 +136,8 @@ public class AudioActivity extends AppCompatActivity {
 
     private void clientPlayMusic(InetAddress address) {
 
+        Log.d(TAG, "clientPlayMusic: startplay");
+
         audioUtils = new AudioUtils();
         File file = new File(Environment.getExternalStorageDirectory(), "Secret_Base.mp3");
         audioUtils.startClient(10050, 10051, address.getHostAddress(), false, file.getPath());
