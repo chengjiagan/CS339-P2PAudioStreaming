@@ -2,6 +2,7 @@ package com.waterlemongan.audiostreaming;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -20,6 +21,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.waterlemongan.audiostreaming.utils.AudioUtils;
+
+import java.io.File;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -31,6 +35,8 @@ public class AudioActivity extends AppCompatActivity {
     private Server server = null;
     private boolean isServer = false;
     private boolean isPlay = false;
+
+    private AudioUtils audioUtils;
 
     public static final String TAG = "AudioActivity";
 
@@ -125,12 +131,15 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void clientPlayMusic(InetAddress address) {
-        //TODO
+
+        audioUtils = new AudioUtils();
+        File file = new File(Environment.getExternalStorageDirectory(), "Secret_Base.mp3");
+        audioUtils.startClient(10050, 10051, address.getHostAddress(), false, file.getPath());
     }
 
     private void clientStopMusic() {
         client.sendStop();
-        //TODO
+        audioUtils.stopClient();
     }
 
     private void startClientNoServer() {
