@@ -109,6 +109,7 @@ public class AudioActivity extends AppCompatActivity {
         srcPath = song.path;
         MusicListAdapter musicListAdapter = new MusicListAdapter(this, R.layout.item_music_listview, mMusicList);
         musicListView.setAdapter(musicListAdapter);
+        Button button = findViewById(R.id.button);
         musicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -119,6 +120,9 @@ public class AudioActivity extends AppCompatActivity {
                 srcPath = music.path;
                 client.sendPlay();
                 isPlay = true;
+                View v = findViewById(R.id.button);
+                Button button = (Button) v;
+                button.setText("pause");
             }
         });
         client.start(address, new Client.EventListener() {
@@ -141,7 +145,6 @@ public class AudioActivity extends AppCompatActivity {
         deviceAddrText.setText(client.getServerAddress());
 //        deviceNameText.setText(client.getServerName());
 
-        Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -172,8 +175,10 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void clientStopMusic() {
+        if (audioUtils != null) {
+            audioUtils.stopClient();
+        }
         client.sendStop();
-        audioUtils.stopClient();
     }
 
     private void startClientNoServer() {
