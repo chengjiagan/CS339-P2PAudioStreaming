@@ -28,6 +28,8 @@ import com.waterlemongan.audiostreaming.utils.AudioUtils;
 import com.waterlemongan.audiostreaming.utils.MusicUtils;
 import com.waterlemongan.audiostreaming.utils.Song;
 
+import org.w3c.dom.Text;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -109,7 +111,7 @@ public class AudioActivity extends AppCompatActivity {
         musicListView = (ListView) findViewById(R.id.musicListView);
         mMusicList = new ArrayList<>();
         mMusicList = MusicUtils.getMusicData(this);
-        Song song = mMusicList.get(1);
+        final Song song = mMusicList.get(1);
         srcPath = song.path;
         MusicListAdapter musicListAdapter = new MusicListAdapter(this, R.layout.item_music_listview, mMusicList);
         musicListView.setAdapter(musicListAdapter);
@@ -127,6 +129,12 @@ public class AudioActivity extends AppCompatActivity {
                 View v = findViewById(R.id.button);
                 Button button = (Button) v;
                 button.setText("pause");
+                v = findViewById(R.id.musicName);
+                TextView t = (TextView) v;
+                t.setText(music.name);
+                v = findViewById(R.id.musicSinger);
+                t = (TextView) v;
+                t.setText(music.singer);
             }
         });
         client.start(address, new Client.EventListener() {
@@ -157,6 +165,12 @@ public class AudioActivity extends AppCompatActivity {
                 if (isPlay) {
                     button.setText("pause");
                     if (audioUtils == null){
+                        v = findViewById(R.id.musicName);
+                        TextView tt = (TextView) v;
+                        tt.setText(song.name);
+                        v = findViewById(R.id.musicSinger);
+                        tt = (TextView) v;
+                        tt.setText(song.singer);
                         client.sendPlay();
                     } else {
                         audioUtils.reversePause();
