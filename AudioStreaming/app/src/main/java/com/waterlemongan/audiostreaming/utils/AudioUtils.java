@@ -81,7 +81,7 @@ public class AudioUtils {
         this.isLocal = isLocal;
         this.srcPath = srcPath;
         if (mThread == null) {
-            mThread = new Thread(clintRunnable);
+            mThread = new Thread(clientRunnable);
             mThread.start();
         }
     }
@@ -104,7 +104,7 @@ public class AudioUtils {
         }
     };
 
-    Runnable clintRunnable = new Runnable() {
+    Runnable clientRunnable = new Runnable() {
         @Override
         public void run() {
             cliDemo = new SoundSender(isLocal);
