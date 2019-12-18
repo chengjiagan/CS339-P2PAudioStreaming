@@ -1,6 +1,7 @@
 package com.waterlemongan.audiostreaming;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -15,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -95,7 +97,9 @@ public class AudioActivity extends AppCompatActivity {
     }
 
     private void stopClient() {
-        client.stop();
+        if (client != null) {
+            client.stop();
+        }
     }
 
     private void startClient(InetAddress address) {
@@ -244,7 +248,6 @@ public class AudioActivity extends AppCompatActivity {
         if (audioUtils != null) {
             audioUtils.stopServer();
         }
-
         server.stop();
     }
 
@@ -293,11 +296,15 @@ public class AudioActivity extends AppCompatActivity {
     private class AudioDeviceListAdapter extends ArrayAdapter<Client> {
 
         private List<Client> items;
+        private Drawable stop;
+        private Drawable play;
 
         public AudioDeviceListAdapter(Context context, int textViewResourceId,
                                       List<Client> objects) {
             super(context, textViewResourceId, objects);
             items = objects;
+            play = context.getDrawable(R.drawable.ic_play);
+            stop = context.getDrawable(R.drawable.ic_pause);
         }
 
         @NonNull
@@ -306,15 +313,19 @@ public class AudioActivity extends AppCompatActivity {
             View v = convertView;
             if (v == null) {
                 LayoutInflater vi = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                v = vi.inflate(R.layout.row_device, null);
+                v = vi.inflate(R.layout.row_audio, null);
             }
             InetAddress device = items.get(position).getSelfAddr();
             if (device != null) {
-                TextView top = (TextView) v.findViewById(R.id.deviceName);
-                TextView bottom = (TextView) v.findViewById(R.id.deviceAddress);
+                ImageView top = v.findViewById(R.id.audioStatus);
+                TextView bottom = v.findViewById(R.id.audioAddress);
 
                 if (top != null) {
-                    top.setText("Device " + position);
+                    if (items.get(position).isPlaying()) {
+                        top.setImageDrawable(play);
+                    } else {
+                        top.setImageDrawable(stop);
+                    }
                 }
                 if (bottom != null) {
                     bottom.setText(device.getHostAddress());
