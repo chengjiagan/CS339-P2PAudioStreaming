@@ -196,9 +196,13 @@ public class AudioActivity extends AppCompatActivity {
         listView = findViewById(R.id.audioListView);
         listView.setAdapter(new AudioDeviceListAdapter(
                 this, R.layout.row_device, server.getClientList()));
+
+        audioUtils = new AudioUtils();
+        audioUtils.startServer(10050, 10051);
     }
 
     private void stopServer() {
+        audioUtils.stopServer();
         server.stop();
     }
 
