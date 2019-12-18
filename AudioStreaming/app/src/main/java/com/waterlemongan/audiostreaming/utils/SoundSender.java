@@ -168,8 +168,8 @@ public class SoundSender implements RTPAppIntf  {
 					}
 					while (isPause) {
 						Log.d(TAG, "run: paused");
-						Thread.sleep(1000);
-						isPause=false;
+						//Thread.sleep(1000);
+						//isPause=false;
 					}
 //告诉显示器释放并显示这个内容
 					Log.d(TAG, "run: here");

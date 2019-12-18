@@ -13,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -24,15 +25,21 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.waterlemongan.audiostreaming.utils.AudioUtils;
+import com.waterlemongan.audiostreaming.utils.MusicUtils;
+import com.waterlemongan.audiostreaming.utils.Song;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AudioActivity extends AppCompatActivity {
     private InetAddress serverAddr;
     private ActivityHandler handler;
     private ListView listView;
+    private ListView musicListView;
+    private List<Song> mMusicList;
+    private String srcPath;
     private Client client = null;
     private Server server = null;
     private boolean isServer = false;
@@ -98,6 +105,30 @@ public class AudioActivity extends AppCompatActivity {
     private void startClient(InetAddress address) {
         setContentView(R.layout.activity_audio_client);
 
+        //初始化音乐列表
+        musicListView = (ListView) findViewById(R.id.musicListView);
+        mMusicList = new ArrayList<>();
+        mMusicList = MusicUtils.getMusicData(this);
+        Song song = mMusicList.get(1);
+        srcPath = song.path;
+        MusicListAdapter musicListAdapter = new MusicListAdapter(this, R.layout.item_music_listview, mMusicList);
+        musicListView.setAdapter(musicListAdapter);
+        Button button = findViewById(R.id.button);
+        musicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Song music = mMusicList.get(position);
+                if (audioUtils != null) {
+                    clientStopMusic();
+                }
+                srcPath = music.path;
+                client.sendPlay();
+                isPlay = true;
+                View v = findViewById(R.id.button);
+                Button button = (Button) v;
+                button.setText("pause");
+            }
+        });
         client.start(address, new Client.EventListener() {
             @Override
             public void onServerDisconnect() {
@@ -112,23 +143,29 @@ public class AudioActivity extends AppCompatActivity {
             }
         });
 
+
         TextView deviceAddrText = findViewById(R.id.deviceAddr);
         TextView deviceNameText = findViewById(R.id.deviceName);
         deviceAddrText.setText(client.getServerAddress());
 //        deviceNameText.setText(client.getServerName());
 
-        Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Button button = (Button) v;
                 isPlay = !isPlay;
                 if (isPlay) {
-                    button.setText("stop");
-                    client.sendPlay();
+                    button.setText("pause");
+                    if (audioUtils == null){
+                        client.sendPlay();
+                    } else {
+                        audioUtils.reversePause();
+                    }
+
                 } else {
                     button.setText("play");
-                    clientStopMusic();
+                    //clientStopMusic();
+                    audioUtils.reversePause();
                 }
             }
         });
@@ -136,16 +173,16 @@ public class AudioActivity extends AppCompatActivity {
 
     private void clientPlayMusic(InetAddress address) {
 
-        Log.d(TAG, "clientPlayMusic: startplay");
-
         audioUtils = new AudioUtils();
-        File file = new File(Environment.getExternalStorageDirectory(), "Secret_Base.mp3");
-        audioUtils.startClient(10050, 10051, address.getHostAddress(), false, file.getPath());
+        //File file = new File(Environment.getExternalStorageDirectory(), "Secret_Base.mp3");
+        audioUtils.startClient(10050, 10051, address.getHostAddress(), false, srcPath);
     }
 
     private void clientStopMusic() {
+        if (audioUtils != null) {
+            audioUtils.stopClient();
+        }
         client.sendStop();
-        audioUtils.stopClient();
     }
 
     private void startClientNoServer() {
@@ -295,6 +332,53 @@ public class AudioActivity extends AppCompatActivity {
                 }
             }
             return v;
+        }
+    }
+
+    private class MusicListAdapter extends ArrayAdapter<Song> {
+
+        private List<Song> musicList;
+        private int resourceId;
+
+        public MusicListAdapter(Context context, int textViewResourceId, List<Song> objects) {
+            super(context, textViewResourceId, objects);
+            resourceId = textViewResourceId;
+            musicList = objects;
+        }
+
+        @Override
+        public View getView(int i, View view, ViewGroup viewGroup) {
+            ViewHolder holder = null;
+            if (view == null) {
+                holder = new ViewHolder();
+                //引入布局
+                view = LayoutInflater.from(getContext()).inflate(resourceId, viewGroup, false);
+                //实例化对象
+                holder.song = (TextView) view.findViewById(R.id.item_mymusic_song);
+                holder.singer = (TextView) view.findViewById(R.id.item_mymusic_singer);
+                holder.duration = (TextView) view.findViewById(R.id.item_mymusic_duration);
+                holder.position = (TextView) view.findViewById(R.id.item_mymusic_postion);
+                view.setTag(holder);
+            } else {
+                holder = (ViewHolder) view.getTag();
+            }
+            //给控件赋值
+            holder.song.setText(musicList.get(i).name.toString());
+            holder.singer.setText(musicList.get(i).singer.toString());
+            //时间需要转换一下
+            int duration = musicList.get(i).duration;
+            String time = MusicUtils.formatTime(duration);
+            holder.duration.setText(time);
+            holder.position.setText(i+1+"");
+
+            return view;
+        }
+        class ViewHolder{
+            TextView song;//歌曲名
+            TextView singer;//歌手
+            TextView duration;//时长
+            TextView position;//序号
+
         }
     }
 }
