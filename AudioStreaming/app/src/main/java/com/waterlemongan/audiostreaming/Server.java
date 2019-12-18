@@ -15,7 +15,7 @@ class Server {
         @Override
         public void timeout(InetAddress address) {
             for (Client c: clientList) {
-                if (c.equals(address)) {
+                if (c.getSelfAddr().equals(address)) {
                     clientList.remove(c);
                 }
             }
@@ -63,7 +63,7 @@ class Server {
                     case "stop":
                         index = indexOf(address);
                         if (index != -1) {
-                            clientList.get(index).setPlaying(true);
+                            clientList.get(index).setPlaying(false);
                         }
                         listener.onStop(address);
                         break;
@@ -105,7 +105,7 @@ class Server {
 
     private int indexOf(InetAddress address) {
         for (int i = 0; i < clientList.size(); i++) {
-            if (clientList.get(i).equals(address)) {
+            if (clientList.get(i).getSelfAddr().equals(address)) {
                 return i;
             }
         }
