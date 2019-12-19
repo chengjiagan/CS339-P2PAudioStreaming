@@ -70,7 +70,9 @@ public class AudioUtils {
 
     public void stopServer() {
         destroyThread();
-        serDemo.rtpSession.endSession();
+        try {
+            serDemo.rtpSession.endSession();
+        } catch (Exception e) {}
     }
 
     public void startClient(int rtpPort, int rtcpPort, String ipAddress, boolean isLocal, String srcPath) {
@@ -92,7 +94,9 @@ public class AudioUtils {
 
     public void stopClient() {
         destroyThread();
-        cliDemo.rtpSession.endSession();
+        try {
+            cliDemo.rtpSession.endSession();
+        } catch (Exception e) {}
     }
 
     Runnable serverRunnable = new Runnable() {
